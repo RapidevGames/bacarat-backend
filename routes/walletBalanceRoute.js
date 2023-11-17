@@ -6,7 +6,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /balance/balance/{address}:
+ * /balance/{address}:
  *   get:
  *     summary: Get balances for a wallet address
  *     tags:
@@ -65,7 +65,7 @@ const router = express.Router();
  *                       type: integer
  *                       description: HTTP status code
  */
-router.get('/balance/:address', async (req, res) => {
+router.get('/:address', async (req, res) => {
   const { address } = req.params;
 
   try {
