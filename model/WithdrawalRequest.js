@@ -23,6 +23,11 @@ const withdrawalRequestSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  User: {
+    type: String,
+    enum: ["Gamer", "Invetor"],
+    default: "Gamer",
+  },
 });
 
 const WithdrawalRequest = mongoose.model(

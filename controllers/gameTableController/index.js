@@ -13,10 +13,13 @@ const createGameTable = async (req, res) => {
       bet_Size,
       Bankers_Address,
       Region,
-      status
+      status,
+      Running_Token,
+      Based_Token,
+      Stop_Loss,
     } = req.body;
 
-    const Remaining_Shares = total_Investor_Seats
+    const Remaining_Shares = total_Investor_Seats;
     const newGameTable = new ContractGameTable({
       table_ID,
       total_Investor_Seats,
@@ -26,7 +29,10 @@ const createGameTable = async (req, res) => {
       bet_Size,
       Bankers_Address,
       Region,
-      status
+      status,
+      Running_Token,
+      Based_Token,
+      Stop_Loss,
     });
 
     await newGameTable.save();
@@ -37,7 +43,6 @@ const createGameTable = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 module.exports = {
   createGameTable,

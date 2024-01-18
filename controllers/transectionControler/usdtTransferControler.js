@@ -1,5 +1,5 @@
-const usdtABI = require('../../contractAbi/USDT.json'); 
-const USDTAddress = process.env.USDT_CONTRACT_ADDRESS;  
+const usdtABI = require("../../contractAbi/USDT.json");
+const USDTAddress = process.env.USDT_CONTRACT_ADDRESS;
 
 class USDTTransferController {
   constructor(privateKey, recipientAddress, amountToSend) {
@@ -16,7 +16,10 @@ class USDTTransferController {
   async checkBalance() {
     try {
       const balance = await this.tokenContract.balanceOf(this.wallet.address);
-      console.log("USDT Token Balance:", ethers.utils.formatUnits(balance, 'wei'));
+      console.log(
+        "USDT Token Balance:",
+        ethers.utils.formatUnits(balance, "wei")
+      );
     } catch (error) {
       console.error("Error checking balance:", error.message);
     }
@@ -34,25 +37,43 @@ class USDTTransferController {
 
       console.log("Adjusted Gas Price:", gasPrice.toString());
 
-      const usdtBalance = await this.tokenContract.balanceOf(this.wallet.address);
+      const usdtBalance = await this.tokenContract.balanceOf(
+        this.wallet.address
+      );
       if (usdtBalance.lt(this.amountToSend)) {
-        throw new Error("Insufficient USDT funds for the transaction. Please add more USDT tokens.");
+        throw new Error(
+          "Insufficient USDT funds for the transaction. Please add more USDT tokens."
+        );
       }
 
-      const tx = await this.tokenContract.transfer(this.recipientAddress, this.amountToSend, {
-        gasPrice: gasPrice,
-        nonce: nonce,
-      });
+      const tx = await this.tokenContract.transfer(
+        this.recipientAddress,
+        this.amountToSend,
+        {
+          gasPrice: gasPrice,
+          nonce: nonce,
+        }
+      );
 
       await tx.wait();
       console.log("Transaction Hash:", tx.hash);
 
       await this.checkBalance();
 
-      res.json({ success: true, message: 'Tokens transferred successfully.', TransactionHash: `${tx.hash}` });
+      res.json({
+        success: true,
+        message: "Tokens transferred successfully.",
+        TransactionHash: `${tx.hash}`,
+      });
     } catch (error) {
       console.error("Error transferring USDT tokens:", error.message);
-      res.status(500).json({ success: false, message: 'Error transferring tokens.', error: error.message });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Error transferring tokens.",
+          error: error.message,
+        });
     }
   }
 }

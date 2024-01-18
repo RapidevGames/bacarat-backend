@@ -1,55 +1,175 @@
 const ContractGameTable = require("../../model/GameTable");
 const Investor = require("../../model/investor");
+const { validationResult } = require("express-validator");
+const WithdrawalRequest = require("../../model/WithdrawalRequest");
+const InvestorShares = require("../../model/InvestorShares");
 
-const buyTableShares = async (req, res) => {
+const getRecords = async (req, res) => {
   try {
-    const { table_ID, sharesToBuy, investor_Address } = req.body;
-    console.log("======================");
-    console.log(table_ID, sharesToBuy, investor_Address);
-    console.log("======================");
-    // Validate inputs (you can customize the validation logic based on your requirements)
-    if (!table_ID || !sharesToBuy || !investor_Address) {
-      return res.status(400).json({ error: "Invalid input data" });
+    const identifier = req.params.identifier;
+    console.log(identifier);
+
+    // Check if identifier is provided
+    if (!identifier) {
+      return res.status(400).json({ error: "Identifier is required" });
     }
 
-    // Find the game table by table_ID
-    const gameTable = await ContractGameTable.findById(table_ID);
+    // Extract investor address or table ID from the parameters
+    const investor_Address = identifier;
 
-    if (!gameTable) {
-      return res.status(404).json({ error: "Game table not found" });
+    // Function to get investor details
+    const getInvestorDetails = (gameTable) => {
+      const matchingInvestors = gameTable.investors.filter(
+        (investor) => investor.investor_Address === investor_Address
+      );
+
+      return matchingInvestors.map((investor) => ({
+        table_ID: gameTable.table_ID,
+        _id: investor._id,
+        investor_Address: investor.investor_Address,
+        investor_Shares: investor.investor_Shares,
+        per_Share_Cost: investor.per_Share_Cost,
+        total_investment: investor.total_investment,
+      }));
+    };
+
+    // Find all game tables and populate the 'investors' field for each table
+    const allGameTables = await ContractGameTable.find().populate("investors");
+
+    // Check if any game tables are found
+    if (!allGameTables || allGameTables.length === 0) {
+      return res.status(404).json({ error: "No game tables found" });
     }
 
-    const tableData = gameTable._id.map( (table_ID) => ({
-      _id: table_ID,
-    }));    
-    console.log('---------------------------');
-    console.log(tableData);
-    console.log('---------------------------');
+    // Extract investor details from all game tables based on the provided address
+    const allInvestorDetails = allGameTables.reduce(
+      (acc, gameTable) => [...acc, ...getInvestorDetails(gameTable)],
+      []
+    );
 
-    const shareCost = gameTable.per_Share_Cost;
-    console.log(gameTable.per_Share_Cost);
+    // Return the details in the response
+    if (allInvestorDetails.length > 0) {
+      return res.status(200).json({
+        allInvestorDetails,
+      });
+    }
 
-    // Save investor's address and the number of shares they bought
-    const investor = new Investor({
-      investor_Address: investor_Address,
-      table_id: gameTable._id,
-      investor_Shares: sharesToBuy,
-      per_Share_Cost: gameTable.per_Share_Cost,
-      //   total_investment: sharesToBuy * gameTable.per_Share_Cost,
-    });
+    // The identifier is assumed to be a table ID
+    const table_ID = identifier;
+    console.log("table_ID", table_ID);
 
-    await investor.save();
-    console.log(investor);
+    // Find the game table by table_ID and populate the 'investors' field
+    const gameTable = await ContractGameTable.findById(table_ID).populate(
+      "investors"
+    );
 
-    // Update the total number of shares in the game table
-    // gameTable.total_Investor_Seats += sharesToBuy;
-    // await gameTable.save();
+    // Check if the game table is found
+    if (gameTable) {
+      // Extract investor details from the populated 'investors' field
+      const investorDetails = getInvestorDetails(gameTable);
 
-    res.status(201).json({ message: "Shares bought successfully!" });
+      // Return the details in the response
+      return res.status(200).json({
+        table_ID: gameTable.table_ID,
+        investorDetails,
+      });
+    }
+
+    // If no matching records are found
+    return res.status(404).json({ error: "No matching records found" });
   } catch (error) {
-    // console.error("Error buying table shares:", error);
+    console.error("Error fetching records:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-module.exports = { buyTableShares };
+const makeWithdrawalRequest = async (req, res) => {
+  try {
+    // Validate request data
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { table_ID, investor_Address, withdrawGameCoins } = req.body;
+
+    // Find the game table by table_ID
+    const gameTable = await ContractGameTable.findById(table_ID);
+
+    // Check if the game table is found
+    if (!gameTable) {
+      return res.status(404).json({ error: "Game table not found" });
+    }
+
+    // Find the investor record in the InvestorShares model
+    const investorShare = await InvestorShares.findOne({
+      TableID: gameTable._id,
+      "investors.address": investor_Address,
+    });
+
+    // Check if the investor record is found
+    if (!investorShare) {
+      return res
+        .status(404)
+        .json({ error: "Investor not found for the given table" });
+    }
+
+    // Check if there is already a pending withdrawal request for the investor
+    const existingPendingRequest = await WithdrawalRequest.findOne({
+      address: investor_Address,
+      status: "pending",
+    });
+
+    if (existingPendingRequest) {
+      return res.status(400).json({
+        error:
+          "There is already a pending withdrawal request for this investor",
+      });
+    }
+
+    // Calculate total invested shares for the investor
+    const totalInvestedShares = investorShare.investors.reduce(
+      (total, investor) => total + investor.InvestedShares,
+      0
+    );
+
+    // Check if the investor has sufficient shares for withdrawal
+    if (totalInvestedShares < withdrawGameCoins) {
+      return res
+        .status(400)
+        .json({ error: "Insufficient shares for withdrawal" });
+    }
+
+    // Create a withdrawal request
+    const withdrawalRequest = new WithdrawalRequest({
+      address: investor_Address,
+      withdrawGameCoins,
+      status: "pending",
+    });
+
+    // Save the withdrawal request
+    await withdrawalRequest.save();
+
+    // Update the investor's invested shares
+    investorShare.investors.forEach((investor) => {
+      if (investor.address === investor_Address) {
+        investor.InvestedShares -= withdrawGameCoins;
+      }
+    });
+
+    // Save the updated investorShares
+    await investorShare.save();
+
+    res
+      .status(201)
+      .json({ message: "Withdrawal request submitted successfully!" });
+  } catch (error) {
+    console.error("Error making withdrawal request:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+module.exports = {
+  getRecords,
+  makeWithdrawalRequest,
+};

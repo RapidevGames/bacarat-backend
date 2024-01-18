@@ -6,6 +6,7 @@ const investorSchema = new mongoose.Schema({
   per_Share_Cost: { type: Number, default: 0, min: 0 },
   total_investment: { type: Number, default: 0, min: 0 },
   table_ID: { type: mongoose.Schema.Types.ObjectId, ref: "gameTable" },
+  DateTime: { type: Date, default: Date.now },
 });
 
 const Investor = mongoose.model("Investor", investorSchema);
