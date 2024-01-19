@@ -3,7 +3,7 @@ const WithdrawalRequest = require("../../model/WithdrawalRequest");
 const User = require("../../model/gamePoint");
 
 class WithdrawalRequestController {
-  async createWithdrawalRequest(req, res, next) {
+  async createWithdrawalRequest(req, res) {
     try {
       const { address, withdrawGameCoins, status } = req.body;
 
@@ -60,7 +60,7 @@ class WithdrawalRequestController {
     }
   }
 
-  async getWithdrawalRequestsByStatus(req, res, next) {
+  async getWithdrawalRequestsByStatus(req, res) {
     try {
       const { status } = req.params;
 
@@ -93,9 +93,12 @@ class WithdrawalRequestController {
     }
   }
 
-  async approveWithdrawalRequest(req, res, next) {
+  async approveWithdrawalRequest(req, res) {
     try {
-      const { requestId, adminAddress } = req.body;
+      const {
+        requestId,
+        // adminAddress
+      } = req.body;
 
       // Find the withdrawal request by ID
       const withdrawalRequest = await WithdrawalRequest.findById(requestId);
@@ -110,7 +113,7 @@ class WithdrawalRequestController {
 
       // Update the withdrawal request status to 'approved' and set the admin address
       withdrawalRequest.status = "approved";
-      withdrawalRequest.adminAddress = adminAddress;
+      // withdrawalRequest.adminAddress = adminAddress;
       await withdrawalRequest.save();
 
       // Respond with success
