@@ -105,14 +105,56 @@ const getAllGameTableDetails = async (req, res) => {
         console.log("losser", totalLoserAmount);
         console.log("winner", totalWinnerAmount * gameTable.bet_Size);
 
-        const totalWiinerandLoss = totalWinnerAmount - totalLoserAmount;
+        const totalWiinerandLoss = totalLoserAmount - totalWinnerAmount;
         const runnningbalace = totalWiinerandLoss + gameTable.Running_Token;
-        console.log("running balance ", runnningbalace);
-        // PNL = Runningbalace - basebalalce
-        const PNL = runnningbalace;
-        console.log("===========================");
-        console.log("PNL", PNL, "%");
-        console.log("===========================");
+
+        // Update Daily Profits
+        gameTable.DailyProfits.push({
+          date: new Date(),
+          totalProfit: runnningbalace,
+        });
+
+        // Update Weekly Profits (assuming a week starts on Monday and ends on Sunday)
+        const now = new Date();
+        const startOfWeek = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - now.getDay()
+        );
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        const currentWeek = gameTable.WeeklyProfits.find((week) => {
+          return week.startDate <= now && week.endDate >= now;
+        });
+
+        if (currentWeek) {
+          currentWeek.totalProfit += runnningbalace;
+        } else {
+          gameTable.WeeklyProfits.push({
+            startDate: startOfWeek,
+            endDate: endOfWeek,
+            totalProfit: runnningbalace,
+          });
+        }
+
+        // Update Monthly Profits
+        const currentMonth = gameTable.MonthlyProfits.find(
+          (month) => month.month === now.getMonth() + 1
+        );
+
+        if (currentMonth) {
+          currentMonth.totalProfit += runnningbalace;
+        } else {
+          gameTable.MonthlyProfits.push({
+            month: now.getMonth() + 1,
+            totalProfit: runnningbalace,
+          });
+        }
+
+        // Save the updated gameTable document
+        await gameTable.save();
+
         // Return details for the current game table
         return {
           _ID: gameTable._id,
@@ -130,7 +172,10 @@ const getAllGameTableDetails = async (req, res) => {
           RunningBalace: gameTable.Running_Token,
           Based_Token: gameTable.Based_Token,
           StopLoss: gameTable.Stop_Loss,
-          PNL_Current: PNL,
+          PNL_Current: runnningbalace,
+          DailyProfits: gameTable.DailyProfits,
+          WeeklyProfits: gameTable.WeeklyProfits,
+          MonthlyProfits: gameTable.MonthlyProfits,
           gamers: gamerDetails,
         };
       })

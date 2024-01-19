@@ -7,7 +7,6 @@ const InvestorShares = require("../../model/InvestorShares");
 const getRecords = async (req, res) => {
   try {
     const identifier = req.params.identifier;
-    console.log(identifier);
 
     // Check if identifier is provided
     if (!identifier) {
@@ -56,7 +55,6 @@ const getRecords = async (req, res) => {
 
     // The identifier is assumed to be a table ID
     const table_ID = identifier;
-    console.log("table_ID", table_ID);
 
     // Find the game table by table_ID and populate the 'investors' field
     const gameTable = await ContractGameTable.findById(table_ID).populate(
@@ -78,8 +76,7 @@ const getRecords = async (req, res) => {
     // If no matching records are found
     return res.status(404).json({ error: "No matching records found" });
   } catch (error) {
-    console.error("Error fetching records:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "NO record Found" });
   }
 };
 

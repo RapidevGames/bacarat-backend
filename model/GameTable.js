@@ -1,4 +1,3 @@
-// models/gameTable.js
 const mongoose = require("mongoose");
 
 const gameTableSchema = new mongoose.Schema({
@@ -20,14 +19,25 @@ const gameTableSchema = new mongoose.Schema({
   Running_Token: { type: Number, default: 0 },
   Based_Token: { type: Number, default: 0 },
   Stop_Loss: { type: Number, default: 0 },
-  DailyProfits: {
-    date: { type: Date, default: Date.now },
-    totalProfit: { type: Number, default: 0 },
-  },
-  Monthly_Profits: {
-    month: { type: Number, default: new Date().getMonth() + 1 },
-    totalProfit: { type: Number, default: 0 },
-  },
+  DailyProfits: [
+    {
+      date: { type: Date, default: Date.now },
+      totalProfit: { type: Number, default: 0 },
+    },
+  ],
+  WeeklyProfits: [
+    {
+      startDate: { type: Date },
+      endDate: { type: Date },
+      totalProfit: { type: Number, default: 0 },
+    },
+  ],
+  MonthlyProfits: [
+    {
+      month: { type: Number, default: new Date().getMonth() + 1 },
+      totalProfit: { type: Number, default: 0 },
+    },
+  ],
 });
 
 const ContractGameTable = mongoose.model("gameTable", gameTableSchema);
