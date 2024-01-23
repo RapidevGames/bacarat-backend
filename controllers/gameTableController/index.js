@@ -17,6 +17,10 @@ const createGameTable = async (req, res) => {
       Running_Token,
       Based_Token,
       Stop_Loss,
+      Minimum_Investment,
+      Max_Investment,
+      investor_ProfitPercentage,
+      EndTime,
     } = req.body;
 
     // Validate input parameters (you can add more validation based on your requirements)
@@ -27,7 +31,11 @@ const createGameTable = async (req, res) => {
       !winners_Rewards ||
       !bet_Size ||
       !Bankers_Address ||
-      !Region
+      !Region ||
+      !Minimum_Investment ||
+      !Max_Investment ||
+      !investor_ProfitPercentage ||
+      !EndTime
     ) {
       return res
         .status(400)
@@ -42,6 +50,9 @@ const createGameTable = async (req, res) => {
         .json({ error: "A game table with the same table_ID already exists." });
     }
 
+    const Contract_TimePeriod = {
+      EndTime,
+    };
     // Create a new game table
     const Remaining_Shares = total_Investor_Seats;
     const newGameTable = new ContractGameTable({
@@ -57,16 +68,18 @@ const createGameTable = async (req, res) => {
       Running_Token,
       Based_Token,
       Stop_Loss,
+      Minimum_Investment,
+      Max_Investment,
+      investor_ProfitPercentage,
+      Contract_TimePeriod,
     });
 
     await newGameTable.save();
 
-    res
-      .status(201)
-      .json({
-        message: "Game table created successfully!",
-        table_ID: newGameTable._id,
-      });
+    res.status(201).json({
+      message: "Game table created successfully!",
+      table_ID: newGameTable._id,
+    });
   } catch (error) {
     console.error("Error creating game table:", error);
     res.status(500).json({ error: "Internal Server Error" });

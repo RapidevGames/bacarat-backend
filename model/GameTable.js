@@ -10,6 +10,9 @@ const gameTableSchema = new mongoose.Schema({
   Bankers_Address: { type: String },
   gamers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Gamer" }],
   investors: [{ type: mongoose.Schema.Types.ObjectId, ref: "Investor" }],
+  Minimum_Investment: { type: String }, // Min Investmetn that investor can do
+  Max_Investment: { type: String }, // Max Investment that investor can do
+  investor_ProfitPercentage: { type: String }, // Investor Profit Percentage ( 10%, 5% ETC )
   status: { type: String, default: "active" },
   Region: { type: String, required: true },
   Contract_TimePeriod: {

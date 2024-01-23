@@ -102,8 +102,8 @@ const getAllGameTableDetails = async (req, res) => {
           return total;
         }, 0);
 
-        console.log("losser", totalLoserAmount);
-        console.log("winner", totalWinnerAmount * gameTable.bet_Size);
+        // console.log("losser", totalLoserAmount);
+        // console.log("winner", totalWinnerAmount * gameTable.bet_Size);
 
         const totalWiinerandLoss = totalLoserAmount - totalWinnerAmount;
         const runnningbalace = totalWiinerandLoss + gameTable.Running_Token;
@@ -162,12 +162,18 @@ const getAllGameTableDetails = async (req, res) => {
           table_ID: gameTable.table_ID,
           total_Investor_Seats: gameTable.total_Investor_Seats,
           per_Share_Cost: gameTable.per_Share_Cost,
+          RemaingShares: gameTable.Remaining_Shares,
           winners_Rewards: gameTable.winners_Rewards,
           bet_Size: gameTable.bet_Size,
           Bankers_Address: gameTable.Bankers_Address,
           investors: gameTable.investors,
           winnersCount,
           losersCount,
+          Minimum_Investment: gameTable.Minimum_Investment,
+          Max_Investment: gameTable.Max_Investment,
+          investor_ProfitPercentage: gameTable.investor_ProfitPercentage,
+          StartTime: gameTable.Contract_TimePeriod.StartTime,
+          EndTime: gameTable.Contract_TimePeriod.EndTime,
           Region: gameTable.Region,
           RunningBalace: gameTable.Running_Token,
           Based_Token: gameTable.Based_Token,
