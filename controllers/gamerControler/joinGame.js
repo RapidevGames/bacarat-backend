@@ -31,7 +31,7 @@ const joinGame = async (req, res) => {
           // Update existing gamer's bet information
           const availableGameCoins = await GameCoins.findOne({ address: gamer_Address });
     
-          if (!availableGameCoins) {
+          if (!availableGameCoins) {  
             return res.status(400).json({ error: "No game coins available for the gamer" });
           }
     

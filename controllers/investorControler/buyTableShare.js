@@ -61,40 +61,81 @@ const buyShares = async (
   console.log(
     `USDT transferred to banker's address: ${transferToBankerTx.hash}`
   );
+  // return transferToBankerTx.hash;
 };
 
-const updateInvestorShares = async (gameTable, investorAddress, shareCost) => {
-  let InvestorShare = await InvestorShares.findOne({
-    TableID: gameTable._id,
-  });
-
-  if (InvestorShare) {
-    const existingInvestor = InvestorShare.investors.find(
-      (investor) => investor.address === investorAddress
-    );
-
-    if (existingInvestor) {
-      // If the investor already exists, update the InvestedShares
-      existingInvestor.InvestedShares += shareCost;
-    } else {
-      // If the investor does not exist, create a new record
-      InvestorShare.investors.push({
-        address: investorAddress,
-        InvestedShares: shareCost,
-      });
-    }
-
-    await InvestorShare.save();
-  } else {
-    // If there is no InvestorShare record, create a new one and add the investor
-    const investor = new InvestorShares({
+const updateInvestorShares = async (
+  gameTable,
+  investorAddress,
+  shareCost,
+  txHash
+) => {
+  try {
+    let investorShares = await InvestorShares.findOne({
       TableID: gameTable._id,
-      investors: [{ address: investorAddress, InvestedShares: shareCost }],
     });
 
-    await investor.save();
-    gameTable.investors.push(investor);
-    await gameTable.save();
+    if (investorShares) {
+      let investor = investorShares.investors.find(
+        (inv) => inv.address === investorAddress
+      );
+
+      if (investor) {
+        // If the investor already exists, update the InvestedShares and add to History
+        investor.InvestedShares += shareCost;
+        investor.History.push({
+          investor_Shares: shareCost,
+          per_Share_Cost: gameTable.per_Share_Cost,
+          total_investment: shareCost * gameTable.per_Share_Cost,
+          table_ID: gameTable._id,
+          MetaMask_TX: txHash,
+        });
+      } else {
+        // If the investor does not exist, create a new record
+        investorShares.investors.push({
+          address: investorAddress,
+          InvestedShares: shareCost,
+          History: [
+            {
+              investor_Shares: shareCost,
+              per_Share_Cost: gameTable.per_Share_Cost,
+              total_investment: shareCost * gameTable.per_Share_Cost,
+              table_ID: gameTable._id,
+              MetaMask_TX: txHash,
+            },
+          ],
+        });
+      }
+
+      await investorShares.save();
+    } else {
+      // If there is no InvestorShares record, create a new one and add the investor
+      const investor = new InvestorShares({
+        TableID: gameTable._id,
+        investors: [
+          {
+            address: investorAddress,
+            InvestedShares: shareCost,
+            History: [
+              {
+                investor_Shares: shareCost,
+                per_Share_Cost: gameTable.per_Share_Cost,
+                total_investment: shareCost * gameTable.per_Share_Cost,
+                table_ID: gameTable._id,
+                MetaMask_TX: txHash,
+              },
+            ],
+          },
+        ],
+      });
+
+      await investor.save();
+      gameTable.investors.push(investor);
+      await gameTable.save();
+    }
+  } catch (error) {
+    console.error("Error updating investor shares:", error.message);
+    throw new Error("Error updating investor shares");
   }
 };
 
@@ -124,7 +165,7 @@ const buyTableShares = async (req, res) => {
     console.log("USDT Token Balance:", formattedBalance);
 
     const SharewithCost = sharesToBuy * 1 * 1000000;
-    const ccctokens = sharesToBuy * gameTable.per_Share_Cost;
+    const Total_Cost_of_share = sharesToBuy * gameTable.per_Share_Cost;
     console.log("Required Amount:", SharewithCost.toString());
 
     if (BigNumber.gte(SharewithCost)) {
@@ -132,20 +173,20 @@ const buyTableShares = async (req, res) => {
         wallet,
         tokenContract,
         gameTable,
-        sharesToBuy,
+        Total_Cost_of_share,
         investor_Address
       );
-      await updateInvestorShares(gameTable, investor_Address, ccctokens);
+      await updateInvestorShares(gameTable, investor_Address, sharesToBuy);
       await updateGameTableShares(gameTable, sharesToBuy);
 
       // Check if the investor has already bought shares in this table
-      let existingInvestor = await Investor.findOne({
-        investor_Address: investor_Address,
-        table_ID: table_ID,
+      let existingInvestor = await InvestorShares.findOne({
+        "investors.address": investor_Address,
+        TableID: table_ID,
       });
 
-      // Update the share investor updating and creating records
-      await updateInvestorShares(gameTable, investor_Address, ccctokens);
+      // // Update the share investor updating and creating records
+      // await updateInvestorShares(gameTable, investor_Address, sharesToBuy);
 
       if (existingInvestor) {
         // If the investor already exists, update the quantity and total investment
