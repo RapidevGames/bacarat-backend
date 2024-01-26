@@ -21,6 +21,7 @@ const getInvestorDetails = (gameTable, investorAddress) => {
 
       investorDetailsMap.set(investor.address, {
         table_ID: gameTable.TableID._id,
+        table_name: gameTable.TableID.table_ID,
         tableStatus: gameTable.TableID.status,
         remainingShares: gameTable.TableID.Remaining_Shares,
         totalCCCBalance: gameTable.TableID.Based_Token,
